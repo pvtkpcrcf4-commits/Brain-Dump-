@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Stem Taken">
+<meta name="theme-color" content="#FFFFFF">
+<title>Stem Taken</title>
+<style>
+:root {
+  --bg:#FFFFFF;--bg2:#F2F2F7;--bg3:#FFFFFF;
+  --lbl:#000;--lbl2:#3C3C43;--lbl3:#3C3C4399;--lbl4:#3C3C432E;
+  --sep:#3C3C4349;--sepo:#C6C6C8;
+  --accent:#007AFF;--accentp:#0051D0;
+  --red:#FF3B30;--green:#34C759;--orange:#FF9500;--purple:#AF52DE;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+@media(prefers-color-scheme:dark){
+  :root{--bg:#000;--bg2:#1C1C1E;--bg3:#2C2C2E;
+  --lbl:#FFF;--lbl2:#EBEBF5;--lbl3:#EBEBF599;--lbl4:#EBEBF52E;
+  --sep:#54545899;--sepo:#38383A;
+  --accent:#0A84FF;--accentp:#409CFF;
+  --red:#FF453A;--green:#30D158;--orange:#FF9F0A;--purple:#BF5AF2;}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;background:var(--bg2);color:var(--lbl);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden;overscroll-behavior:none;font-size:17px;line-height:1.4}
+button{font-family:inherit;font-size:inherit;cursor:pointer;border:none;background:none;color:var(--accent);padding:0}
+input,textarea,select{font-family:inherit;font-size:17px;color:var(--lbl);background:transparent;border:none;outline:none;width:100%}
+
+/* App shell */
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+.nav{background:rgba(255,255,255,.85);padding:calc(var(--safe-top) + 8px) 16px 8px;
+  border-bottom:.5px solid var(--sepo);display:flex;align-items:center;justify-content:space-between;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);z-index:10}
+@media(prefers-color-scheme:dark){.nav{background:rgba(0,0,0,.85)}}
+.nav-title{font-size:17px;font-weight:600}
+.nav-large{background:var(--bg2);padding:8px 16px 12px}
+.nav-large h1{margin:0;font-size:34px;font-weight:700;letter-spacing:-.4px}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg2)}
+
+/* List */
+.sec-hdr{padding:24px 16px 6px;font-size:13px;text-transform:uppercase;color:var(--lbl3);letter-spacing:-.08px}
+.sec-hdr.ov{color:var(--red);font-weight:600}
+.list-group{background:var(--bg);margin:0 16px;border-radius:10px;overflow:hidden}
+.todo-row{display:flex;align-items:flex-start;padding:12px 16px;border-bottom:.5px solid var(--sepo);background:var(--bg);transition:background .15s}
+.todo-row:last-child{border-bottom:none}
+.todo-row:active{background:var(--bg2)}
+.check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--sepo);margin-right:12px;margin-top:1px;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.check.done{background:var(--accent);border-color:var(--accent)}
+.check.done::after{content:'';width:10px;height:5px;border-left:2px solid white;border-bottom:2px solid white;transform:rotate(-45deg) translate(1px,-1px)}
+.todo-body{flex:1;min-width:0}
+.todo-title{font-size:17px;color:var(--lbl);word-wrap:break-word}
+.todo-row.done .todo-title{color:var(--lbl3);text-decoration:line-through}
+.todo-meta{margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--lbl3)}
+.chip{display:inline-flex;align-items:center;gap:3px}
+.chip.warn{color:var(--red)}.chip.rec{color:var(--purple)}
+.chip svg{width:12px;height:12px}
+.todo-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;margin-left:8px;flex-shrink:0}
+.empty{text-align:center;padding:60px 32px;color:var(--lbl3)}
+.empty svg{width:48px;height:48px;margin-bottom:16px;opacity:.4}
+.empty h2{font-size:22px;font-weight:600;margin:0 0 8px;color:var(--lbl2)}
+.empty p{font-size:15px;margin:0;line-height:1.4}
+
+/* FAB bar */
+.fab-bar{position:fixed;left:0;right:0;bottom:var(--safe-bottom);padding:12px 16px 16px;
+  display:flex;gap:12px;z-index:50;background:linear-gradient(to top,var(--bg2) 60%,transparent);pointer-events:none}
+.fab-bar>*{pointer-events:auto}
+.fab-mic,.fab-type{flex:1;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;
+  gap:8px;font-size:17px;font-weight:600;transition:transform .1s}
+.fab-mic{background:var(--accent);color:white;box-shadow:0 4px 14px rgba(0,122,255,.35)}
+.fab-type{background:var(--bg);color:var(--accent);border:.5px solid var(--sepo);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.fab-mic:active,.fab-type:active{transform:scale(.97)}
+.fab-mic svg,.fab-type svg{width:20px;height:20px}
+.fab-photo{position:fixed;right:16px;bottom:calc(var(--safe-bottom) + 88px);width:44px;height:44px;
+  border-radius:50%;background:var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.15);display:flex;
+  align-items:center;justify-content:center;z-index:50;color:var(--accent);border:.5px solid var(--sepo);transition:transform .1s}
+.fab-photo:active{transform:scale(.92)}
+.fab-photo svg{width:20px;height:20px}
+
+/* Sheets */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;opacity:0;pointer-events:none;transition:opacity .3s}
+.sheet-backdrop.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-radius:16px 16px 0 0;
+  z-index:101;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);
+  max-height:92vh;max-height:92dvh;display:flex;flex-direction:column;padding-bottom:var(--safe-bottom)}
+.sheet.show{transform:translateY(0)}
+.sheet-handle{width:36px;height:5px;background:var(--lbl4);border-radius:3px;margin:8px auto 0}
+.sheet-hdr{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:.5px solid var(--sepo)}
+.sheet-title{font-size:17px;font-weight:600}
+.sheet-body{padding:16px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+
+/* Recorder */
+.recorder{text-align:center;padding:16px 16px 8px}
+.mic-btn{width:120px;height:120px;border-radius:50%;background:var(--accent);margin:12px auto 16px;
+  display:flex;align-items:center;justify-content:center;transition:transform .15s,background .2s;
+  box-shadow:0 4px 24px rgba(0,122,255,.3);position:relative}
+.mic-btn.rec{background:var(--red);box-shadow:0 4px 24px rgba(255,59,48,.4)}
+.mic-btn.rec::before{content:'';position:absolute;inset:-8px;border-radius:50%;
+  border:3px solid var(--red);opacity:.5;animation:pulse 1.5s ease-out infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.3);opacity:0}}
+.mic-btn:active{transform:scale(.95)}
+.mic-btn svg{width:48px;height:48px;color:white}
+.rec-status{font-size:15px;color:var(--lbl2);min-height:22px;margin-bottom:4px}
+.rec-timer{font-size:28px;font-weight:200;font-variant-numeric:tabular-nums;color:var(--lbl);margin-bottom:8px}
+.input-area{background:var(--bg);border-radius:10px;padding:12px 14px;margin:0 0 16px;
+  min-height:80px;font-size:16px;color:var(--lbl);line-height:1.45}
+.input-area textarea{width:100%;min-height:60px;border:none;background:transparent;resize:vertical;
+  font-family:inherit;font-size:16px;line-height:1.45;color:var(--lbl)}
+.input-area.empty-state{color:var(--lbl3);font-style:italic}
+
+/* Mode tabs */
+.mode-tabs{display:flex;background:var(--bg2);border-radius:8px;padding:2px;margin-bottom:12px}
+.mode-tab{flex:1;padding:8px;text-align:center;border-radius:6px;font-size:14px;font-weight:500;color:var(--lbl2);transition:all .2s}
+.mode-tab.active{background:var(--bg);color:var(--lbl);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* Form */
+.form-group{background:var(--bg);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.form-row{display:flex;align-items:center;padding:11px 16px;border-bottom:.5px solid var(--sepo);min-height:44px}
+.form-row:last-child{border-bottom:none}
+.form-lbl{font-size:17px;color:var(--lbl);width:110px;flex-shrink:0}
+.form-row input,.form-row textarea,.form-row select{flex:1;font-size:17px;text-align:right;color:var(--lbl2);
+  background:transparent;border:none;outline:none;font-family:inherit;appearance:none;-webkit-appearance:none}
+.form-row select{direction:rtl}
+.form-row textarea{resize:none;min-height:44px;padding-top:11px;text-align:left}
+.form-row.col{flex-direction:column;align-items:stretch}
+.form-row.col .form-lbl{margin-bottom:4px;width:100%}
+.form-row.col textarea,.form-row.col input{text-align:left}
+.form-row input[type=date],.form-row input[type=time]{color:var(--accent);font-weight:500}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px}
+.photo-item{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;background:var(--bg2)}
+.photo-item img{width:100%;height:100%;object-fit:cover}
+.photo-rm{position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(0,0,0,.6);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;line-height:1}
+.btn-primary{width:100%;background:var(--accent);color:white;padding:14px;border-radius:12px;
+  font-size:17px;font-weight:600;margin-top:8px}
+.btn-primary:active{background:var(--accentp)}
+.btn-primary:disabled{opacity:.4}
+.btn-secondary{width:100%;background:var(--bg);color:var(--accent);padding:14px;border-radius:12px;font-size:17px;font-weight:500;margin-top:8px}
+.btn-dest{width:100%;background:var(--bg);color:var(--red);padding:14px;border-radius:12px;font-size:17px;margin-top:8px}
+.processing{display:flex;align-items:center;gap:8px;color:var(--lbl3);font-size:15px;padding:8px 0}
+.spinner{width:16px;height:16px;border:2px solid var(--sepo);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:calc(var(--safe-bottom) + 100px);left:50%;
+  transform:translateX(-50%) translateY(100px);background:rgba(0,0,0,.85);color:white;
+  padding:12px 20px;border-radius:24px;font-size:15px;z-index:200;transition:transform .3s;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);max-width:80%;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.help-text{font-size:13px;color:var(--lbl3);padding:6px 16px 0;line-height:1.4}
+.sec-label{padding:16px 16px 6px;font-size:13px;text-transform:uppercase;color:var(--lbl3)}
+
+/* PDF Export sheet */
+.pdf-options label{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:.5px solid var(--sepo);font-size:17px}
+.pdf-options label:last-child{border-bottom:none}
+.pdf-options input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent);flex-shrink:0}
+.pdf-preview{background:var(--bg2);border-radius:10px;padding:14px;margin-top:12px;font-size:14px;color:var(--lbl2);line-height:1.5}
+.range-row{display:flex;gap:8px;margin-top:8px}
+.range-row input[type=date]{background:var(--bg);border:.5px solid var(--sepo);border-radius:8px;
+  padding:8px 12px;font-size:15px;color:var(--accent);flex:1;text-align:center}
+
+/* Onboarding */
+.onboarding{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;overflow-y:auto}
+.ob-content{flex:1;padding:calc(var(--safe-top) + 32px) 24px 24px;display:flex;flex-direction:column;justify-content:center;text-align:center;min-height:100%}
+.ob-step{display:none}
+.ob-step.active{display:block}
+.ob-icon{width:80px;height:80px;border-radius:22px;background:var(--accent);margin:0 auto 24px;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,122,255,.25)}
+.ob-icon svg{width:44px;height:44px;color:white}
+.onboarding h2{font-size:28px;font-weight:700;margin:0 0 12px;letter-spacing:-.4px}
+.onboarding p{font-size:17px;color:var(--lbl2);margin:0 0 16px;line-height:1.5}
+.ob-steps{text-align:left;background:var(--bg2);border-radius:12px;padding:16px 18px;margin:12px 0}
+.ob-steps li{margin-bottom:12px;line-height:1.45;color:var(--lbl);font-size:15px}
+.ob-steps li:last-child{margin-bottom:0}
+.ob-steps strong{color:var(--accent);font-weight:600}
+.ob-footer{padding:16px 24px calc(var(--safe-bottom) + 24px);background:var(--bg);
+  border-top:.5px solid var(--sepo);display:flex;gap:12px;align-items:center;justify-content:space-between}
+.ob-dots{display:flex;gap:6px}
+.ob-dots span{width:7px;height:7px;border-radius:50%;background:var(--lbl4);transition:background .2s}
+.ob-dots span.active{background:var(--accent)}
+.ob-skip{color:var(--lbl2);font-size:15px}
+.ob-next{background:var(--accent);color:white;padding:12px 28px;border-radius:22px;font-size:16px;font-weight:600}
+.url-display{background:var(--bg2);padding:10px 12px;border-radius:8px;
+  font-family:ui-monospace,"SF Mono",monospace;font-size:12px;color:var(--lbl2);
+  word-break:break-all;margin:8px 0;text-align:left;user-select:all;-webkit-user-select:all}
+
+@media(prefers-color-scheme:dark){
+  .nav-large{background:var(--bg)}
+  .content{background:var(--bg)}
+  .sheet{background:var(--bg3)}
+  .input-area,.form-group,.list-group,.todo-row,.btn-secondary,.btn-dest,.fab-type,.fab-photo,.mode-tab.active{background:var(--bg3)}
+  .onboarding,.ob-footer{background:var(--bg)}
+  .ob-steps,.url-display,.pdf-preview,.range-row input[type=date]{background:var(--bg3)}
+}
+
+/* PDF print styles */
+@media print {
+  body{background:white!important;color:black!important;font-size:12pt;overflow:visible!important}
+  #app,#onboarding,.fab-bar,.fab-photo,.sheet-backdrop,.sheet,.toast{display:none!important}
+  #pdf-print-area{display:block!important}
+}
+#pdf-print-area{display:none}
+</style>
+</head>
+<body>
+
+<!-- Onboarding -->
+<div class="onboarding" id="onboarding" style="display:none">
+  <div class="ob-content">
+    <div class="ob-step active" data-step="0">
+      <div class="ob-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+      <h2>Welkom bij Stem Taken</h2>
+      <p>Spreek of typ je taken in. De app zet ze automatisch om in afspraken met datum, tijd en locatie.</p>
+    </div>
+    <div class="ob-step" data-step="1">
+      <div class="ob-icon" style="background:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <h2>Zet 'm op je beginscherm</h2>
+      <p>Zo werkt de app fullscreen — net als een echte app.</p>
+      <ol class="ob-steps">
+        <li>Tik op het <strong>Deel-icoon</strong> onderaan in Safari</li>
+        <li>Tik op <strong>"Zet op beginscherm"</strong></li>
+        <li>Tik <strong>Voeg toe</strong> rechtsboven</li>
+      </ol>
+    </div>
+    <div class="ob-step" data-step="2">
+      <div class="ob-icon" style="background:var(--orange)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <h2>Action Button koppelen</h2>
+      <p>Druk op de Action Button → app opent direct in opname-modus.</p>
+      <ol class="ob-steps">
+        <li>Open de <strong>Snelkoppelingen</strong>-app → tik <strong>+</strong></li>
+        <li>Voeg actie <strong>"URL openen"</strong> toe en plak:</li>
+      </ol>
+      <div class="url-display" id="ob-url">…</div>
+      <ol class="ob-steps" start="3">
+        <li>Sla op als <strong>"Stem Taak"</strong></li>
+        <li><strong>Instellingen → Action Button → Snelkoppeling</strong> → kies "Stem Taak"</li>
+      </ol>
+    </div>
+    <div class="ob-step" data-step="3">
+      <div class="ob-icon" style="background:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>
+      <h2>Slimmere taken (optioneel)</h2>
+      <p>Met een gratis Anthropic API-key begrijpt de app zinnen als <em>"morgen rond 19u bij Mark thuis"</em> moeiteloos.</p>
+      <ol class="ob-steps">
+        <li>Ga naar <strong>console.anthropic.com</strong> en maak een account</li>
+        <li>Voeg $5 startcredit toe, maak een API-key aan</li>
+        <li>Plak 'm via het <strong>tandwiel-icoon</strong> in deze app</li>
+      </ol>
+    </div>
+  </div>
+  <div class="ob-footer">
+    <button class="ob-skip" id="ob-skip">Sla over</button>
+    <div class="ob-dots"><span class="active"></span><span></span><span></span><span></span></div>
+    <button class="ob-next" id="ob-next">Volgende</button>
+  </div>
+</div>
+
+<!-- Hoofdscherm -->
+<div id="app">
+  <div class="nav">
+    <button id="settings-btn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <div class="nav-title">Stem Taken</div>
+    <button id="pdf-btn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></button>
+  </div>
+  <div class="nav-large"><h1>Taken</h1></div>
+  <div class="content" id="todo-list"></div>
+</div>
+
+<!-- FABs -->
+<button class="fab-photo" id="photo-fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+<div class="fab-bar">
+  <button class="fab-type" id="type-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>Typen</button>
+  <button class="fab-mic" id="record-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>Spreken</button>
+</div>
+
+<!-- Recorder sheet -->
+<div class="sheet-backdrop" id="rec-bd"></div>
+<div class="sheet" id="rec-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <button id="rec-cancel">Annuleer</button>
+    <div class="sheet-title">Nieuwe taak</div>
+    <button id="rec-save" disabled style="font-weight:600">Opslaan</button>
+  </div>
+  <div class="sheet-body">
+    <div class="mode-tabs">
+      <div class="mode-tab active" data-mode="voice">🎙 Spreken</div>
+      <div class="mode-tab" data-mode="type">⌨️ Typen</div>
+    </div>
+    <div id="voice-mode">
+      <div class="recorder">
+        <div class="rec-timer" id="rec-timer">0:00</div>
+        <div class="rec-status" id="rec-status">Tik op de microfoon om te starten</div>
+        <div class="mic-btn" id="mic-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+      </div>
+    </div>
+    <div id="type-mode" style="display:none">
+      <div class="input-area"><textarea id="type-input" rows="3" placeholder="Typ je taak... bv. 'Tandarts donderdag 14:30 bij praktijk Centrum'"></textarea></div>
+      <button class="btn-primary" id="type-process" style="margin-bottom:16px">Verwerk taak</button>
+    </div>
+    <div id="rec-photos" style="display:none"><div class="photo-grid" id="rec-photo-grid"></div></div>
+    <div class="input-area empty-state" id="transcript-box" style="display:none">Je transcriptie verschijnt hier...</div>
+    <div id="ai-processing" class="processing" style="display:none"><div class="spinner"></div><span>Verwerken...</span></div>
+    <div id="parsed-fields" style="display:none">
+      <div class="form-group">
+        <div class="form-row col"><div class="form-lbl">Titel</div><input type="text" id="f-title" placeholder="Titel"></div>
+        <div class="form-row"><div class="form-lbl">Datum</div><input type="date" id="f-date"></div>
+        <div class="form-row"><div class="form-lbl">Tijd</div><input type="time" id="f-time"></div>
+        <div class="form-row"><div class="form-lbl">Locatie</div><input type="text" id="f-loc" placeholder="Optioneel"></div>
+        <div class="form-row"><div class="form-lbl">Herhaal</div>
+          <select id="f-recur"><option value="none">Niet</option><option value="daily">Dagelijks</option><option value="weekdays">Werkdagen</option><option value="weekly">Wekelijks</option><option value="biweekly">Om de 2 weken</option><option value="monthly">Maandelijks</option><option value="yearly">Jaarlijks</option></select></div>
+        <div class="form-row col"><div class="form-lbl">Notities</div><textarea id="f-notes" rows="2" placeholder="Optioneel"></textarea></div>
+      </div>
+      <div class="help-text" id="parser-src"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail sheet -->
+<div class="sheet-backdrop" id="det-bd"></div>
+<div class="sheet" id="det-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <button id="det-cancel">Sluiten</button>
+    <div class="sheet-title">Taak</div>
+    <button id="det-save" style="font-weight:600">Opslaan</button>
+  </div>
+  <div class="sheet-body">
+    <div class="form-group">
+      <div class="form-row col"><div class="form-lbl">Titel</div><input type="text" id="d-title"></div>
+      <div class="form-row"><div class="form-lbl">Datum</div><input type="date" id="d-date"></div>
+      <div class="form-row"><div class="form-lbl">Tijd</div><input type="time" id="d-time"></div>
+      <div class="form-row"><div class="form-lbl">Locatie</div><input type="text" id="d-loc"></div>
+      <div class="form-row"><div class="form-lbl">Herhaal</div>
+        <select id="d-recur"><option value="none">Niet</option><option value="daily">Dagelijks</option><option value="weekdays">Werkdagen</option><option value="weekly">Wekelijks</option><option value="biweekly">Om de 2 weken</option><option value="monthly">Maandelijks</option><option value="yearly">Jaarlijks</option></select></div>
+      <div class="form-row col"><div class="form-lbl">Notities</div><textarea id="d-notes" rows="3"></textarea></div>
+    </div>
+    <div id="det-photos-sec" style="display:none">
+      <div class="sec-label">Foto's</div>
+      <div class="form-group"><div class="photo-grid" id="det-photo-grid"></div></div>
+    </div>
+    <button class="btn-primary" id="det-ics">📅 Voeg toe aan iPhone Agenda</button>
+    <button class="btn-dest" id="det-delete">Verwijder taak</button>
+  </div>
+</div>
+
+<!-- PDF sheet -->
+<div class="sheet-backdrop" id="pdf-bd"></div>
+<div class="sheet" id="pdf-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <button id="pdf-cancel">Annuleer</button>
+    <div class="sheet-title">Exporteer als PDF</div>
+    <button id="pdf-go" style="font-weight:600;color:var(--red)">Exporteer</button>
+  </div>
+  <div class="sheet-body">
+    <div class="sec-label" style="padding-left:0">Wat wil je exporteren?</div>
+    <div class="form-group">
+      <div class="pdf-options" style="padding:0 16px">
+        <label><input type="radio" name="pdf-scope" value="all" checked> Alle open taken</label>
+        <label><input type="radio" name="pdf-scope" value="today"> Alleen vandaag</label>
+        <label><input type="radio" name="pdf-scope" value="week"> Komende week</label>
+        <label><input type="radio" name="pdf-scope" value="done"> Alleen voltooide taken</label>
+        <label><input type="radio" name="pdf-scope" value="range"> Datumbereik</label>
+      </div>
+    </div>
+    <div id="pdf-range-row" class="range-row" style="display:none">
+      <input type="date" id="pdf-from" placeholder="Van">
+      <input type="date" id="pdf-to" placeholder="Tot">
+    </div>
+    <div class="sec-label" style="padding-left:0;margin-top:8px">Opties</div>
+    <div class="form-group">
+      <div class="pdf-options" style="padding:0 16px">
+        <label><input type="checkbox" id="pdf-show-notes" checked> Notities meenemen</label>
+        <label><input type="checkbox" id="pdf-show-loc" checked> Locatie meenemen</label>
+        <label><input type="checkbox" id="pdf-show-recur" checked> Herhaling tonen</label>
+        <label><input type="checkbox" id="pdf-show-done"> Voltooide taken tonen</label>
+        <label><input type="checkbox" id="pdf-group-date" checked> Groeperen op datum</label>
+      </div>
+    </div>
+    <div class="pdf-preview" id="pdf-preview">Kies opties hierboven om een voorbeeld te zien.</div>
+    <p class="help-text">De PDF wordt geopend in Safari. Gebruik daarna <strong>Deel → Sla op in Bestanden</strong> om hem te bewaren, of print direct.</p>
+  </div>
+</div>
+
+<!-- Settings sheet -->
+<div class="sheet-backdrop" id="set-bd"></div>
+<div class="sheet" id="set-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <button id="set-cancel">Sluiten</button>
+    <div class="sheet-title">Instellingen</div>
+    <button id="set-save" style="font-weight:600">Opslaan</button>
+  </div>
+  <div class="sheet-body">
+    <div class="sec-label" style="padding-left:0">Claude API</div>
+    <div class="form-group">
+      <div class="form-row col"><div class="form-lbl">API Key</div><input type="password" id="set-key" placeholder="sk-ant-..."></div>
+    </div>
+    <div class="help-text">Je key wordt alleen lokaal op dit toestel opgeslagen.</div>
+    <div class="sec-label" style="padding-left:0;margin-top:12px">Hulp</div>
+    <div class="form-group">
+      <div class="form-row" style="cursor:pointer" id="show-ob"><div class="form-lbl" style="width:auto;color:var(--accent)">Bekijk introductie opnieuw</div></div>
+    </div>
+    <div class="sec-label" style="padding-left:0">Data</div>
+    <div class="form-group">
+      <div class="form-row" style="cursor:pointer" id="exp-json"><div class="form-lbl" style="width:auto;color:var(--accent)">Exporteer alle taken (.json)</div></div>
+      <div class="form-row" style="cursor:pointer" id="imp-json"><div class="form-lbl" style="width:auto;color:var(--accent)">Importeer taken (.json)</div><input type="file" id="imp-file" accept=".json" style="display:none"></div>
+      <div class="form-row" style="cursor:pointer" id="clear-all"><div class="form-lbl" style="width:auto;color:var(--red)">Wis alle taken</div></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="photo-input" accept="image/*" multiple style="display:none">
+<div id="pdf-print-area"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══ State ═══
+const SK='voice-todos-v1',SETK='voice-todos-settings-v1',OBK='voice-todos-ob-v1';
+let todos=[],settings={apiKey:''},currentEdit=null,currentMode='voice';
+let recognition=null,isRec=false,recStart=0,recTimer=null,transcript='',photos=[];
+
+const RLABELS={daily:'Dagelijks',weekdays:'Werkdagen',weekly:'Wekelijks',biweekly:'Om de 2 weken',monthly:'Maandelijks',yearly:'Jaarlijks'};
+
+// ═══ Storage ═══
+function load(){
+  try{todos=JSON.parse(localStorage.getItem(SK)||'[]')}catch(e){todos=[]}
+  try{settings=JSON.parse(localStorage.getItem(SETK)||'{}')}catch(e){}
+  settings.apiKey=settings.apiKey||'';
+  processRecurring();
+}
+function save(){try{localStorage.setItem(SK,JSON.stringify(todos))}catch(e){toast('Opslaan mislukt')}}
+function saveSet(){localStorage.setItem(SETK,JSON.stringify(settings))}
+
+// ═══ Helpers ═══
+const pad=n=>n.toString().padStart(2,'0');
+const todayISO=()=>{const d=new Date();return`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+const d2iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+function fmtDT(date,time){
+  if(!date)return'';
+  const d=new Date(date+(time?`T${time}`:'T12:00'));
+  const today=new Date();today.setHours(0,0,0,0);
+  const tom=new Date(today);tom.setDate(tom.getDate()+1);
+  const donly=new Date(d);donly.setHours(0,0,0,0);
+  let dl;
+  if(donly.getTime()===today.getTime())dl='Vandaag';
+  else if(donly.getTime()===tom.getTime())dl='Morgen';
+  else{const dy=['zo','ma','di','wo','do','vr','za'],mo=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];dl=`${dy[d.getDay()]} ${d.getDate()} ${mo[d.getMonth()]}`;}
+  return time?`${dl} • ${time}`:dl;
+}
+function getTS(t){if(!t.date)return Number.MAX_SAFE_INTEGER;return new Date(`${t.date}T${t.time||'00:00'}`).getTime()}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+let toastT;
+function toast(msg,dur=2200){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),dur)}
+
+// ═══ Recurring ═══
+function nextRecurDate(dateStr,type){
+  const d=new Date(dateStr+'T12:00');
+  if(type==='daily')d.setDate(d.getDate()+1);
+  else if(type==='weekdays'){do{d.setDate(d.getDate()+1)}while(d.getDay()===0||d.getDay()===6)}
+  else if(type==='weekly')d.setDate(d.getDate()+7);
+  else if(type==='biweekly')d.setDate(d.getDate()+14);
+  else if(type==='monthly')d.setMonth(d.getMonth()+1);
+  else if(type==='yearly')d.setFullYear(d.getFullYear()+1);
+  else return null;
+  return d2iso(d);
+}
+function processRecurring(){
+  let added=0;
+  todos.forEach(t=>{
+    if(t.done&&t.recur&&t.recur!=='none'&&!t.recurProcessed&&t.date){
+      const nd=nextRecurDate(t.date,t.recur);
+      if(nd){todos.push({...t,id:'todo_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),date:nd,done:false,completedAt:null,createdAt:Date.now(),recurProcessed:false});added++}
+      t.recurProcessed=true;
+    }
+  });
+  if(added)save();
+}
+
+// ═══ Render ═══
+function render(){
+  const c=document.getElementById('todo-list');
+  if(!todos.length){
+    c.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg><h2>Nog geen taken</h2><p>Tik op <strong>Spreken</strong> of <strong>Typen</strong><br>onderaan om te beginnen.</p></div>`;
+    c.style.paddingBottom='140px';return;
+  }
+  const open=todos.filter(t=>!t.done).sort((a,b)=>getTS(a)-getTS(b));
+  const done=todos.filter(t=>t.done).sort((a,b)=>(b.completedAt||0)-(a.completedAt||0));
+  const now=Date.now();
+  const te=new Date();te.setHours(23,59,59,999);
+  const we=new Date();we.setDate(we.getDate()+7);we.setHours(23,59,59,999);
+  const ov=open.filter(t=>t.date&&getTS(t)<now);
+  const tod=open.filter(t=>t.date&&getTS(t)>=now&&getTS(t)<=te.getTime());
+  const wk=open.filter(t=>t.date&&getTS(t)>te.getTime()&&getTS(t)<=we.getTime());
+  const lat=open.filter(t=>t.date&&getTS(t)>we.getTime());
+  const nd=open.filter(t=>!t.date);
+  let html='';
+  if(ov.length)html+=sec('Te laat',ov,'ov');
+  if(tod.length)html+=sec('Vandaag',tod);
+  if(wk.length)html+=sec('Komende week',wk);
+  if(lat.length)html+=sec('Later',lat);
+  if(nd.length)html+=sec('Geen datum',nd);
+  if(done.length)html+=sec('Voltooid',done.slice(0,50));
+  c.innerHTML=html;c.style.paddingBottom='140px';
+  c.querySelectorAll('.todo-row').forEach(row=>{
+    const id=row.dataset.id;
+    row.querySelector('.check').addEventListener('click',e=>{e.stopPropagation();toggleDone(id)});
+    row.querySelector('.todo-body').addEventListener('click',()=>openDetail(id));
+  });
+}
+
+function sec(label,items,mod=''){
+  return`<div class="sec-hdr ${mod==='ov'?'ov':''}">${label}</div><div class="list-group">${items.map(row).join('')}</div>`;
+}
+function row(t){
+  const meta=[];
+  if(t.date){const late=!t.done&&getTS(t)<Date.now();meta.push(`<span class="chip ${late?'warn':''}">${svgClock}${esc(fmtDT(t.date,t.time))}</span>`)}
+  if(t.location)meta.push(`<span class="chip">${svgPin}${esc(t.location)}</span>`);
+  if(t.recur&&t.recur!=='none')meta.push(`<span class="chip rec">${svgRecur}${RLABELS[t.recur]}</span>`);
+  if(t.photos&&t.photos.length)meta.push(`<span class="chip">${svgPhoto}${t.photos.length}</span>`);
+  const thumb=t.photos&&t.photos.length?`<img class="todo-thumb" src="${t.photos[0].dataUrl}" alt="">`:'';
+  return`<div class="todo-row ${t.done?'done':''}" data-id="${t.id}"><div class="check ${t.done?'done':''}"></div><div class="todo-body"><div class="todo-title">${esc(t.title||'(geen titel)')}</div>${meta.length?`<div class="todo-meta">${meta.join('')}</div>`:''}</div>${thumb}</div>`;
+}
+const svgClock=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+const svgPin=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+const svgRecur=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`;
+const svgPhoto=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+
+// ═══ Acties ═══
+function toggleDone(id){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  t.done=!t.done;t.completedAt=t.done?Date.now():null;
+  save();
+  if(t.done&&t.recur&&t.recur!=='none'&&!t.recurProcessed&&t.date){processRecurring();toast(`${RLABELS[t.recur]} — volgende staat klaar`)}
+  render();
+}
+function openDetail(id){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  currentEdit=id;
+  document.getElementById('d-title').value=t.title||'';
+  document.getElementById('d-date').value=t.date||'';
+  document.getElementById('d-time').value=t.time||'';
+  document.getElementById('d-loc').value=t.location||'';
+  document.getElementById('d-notes').value=t.notes||'';
+  document.getElementById('d-recur').value=t.recur||'none';
+  const ps=document.getElementById('det-photos-sec'),pg=document.getElementById('det-photo-grid');
+  if(t.photos&&t.photos.length){ps.style.display='block';pg.innerHTML=t.photos.map(p=>`<div class="photo-item"><img src="${p.dataUrl}" alt=""></div>`).join('')}
+  else ps.style.display='none';
+  showSheet('det');
+}
+
+// ═══ Sheets ═══
+function showSheet(n){document.getElementById(n+'-bd').classList.add('show');document.getElementById(n+'-sheet').classList.add('show')}
+function hideSheet(n){document.getElementById(n+'-bd').classList.remove('show');document.getElementById(n+'-sheet').classList.remove('show')}
+
+// ═══ Mode ═══
+function setMode(mode){
+  currentMode=mode;
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',t.dataset.mode===mode));
+  document.getElementById('voice-mode').style.display=mode==='voice'?'block':'none';
+  document.getElementById('type-mode').style.display=mode==='type'?'block':'none';
+  if(mode==='type')setTimeout(()=>document.getElementById('type-input').focus(),100);
+}
+
+// ═══ Speech ═══
+function startRec(){
+  if(isRec)return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Spraakherkenning werkt alleen in Safari op iOS');return}
+  recognition=new SR();recognition.lang='nl-NL';recognition.continuous=true;recognition.interimResults=true;
+  transcript='';let fin='',inter='';
+  const box=document.getElementById('transcript-box');
+  box.style.display='block';box.textContent='Luisteren...';box.classList.remove('empty-state');
+  recognition.onresult=e=>{
+    inter='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)fin+=e.results[i][0].transcript+' ';
+      else inter+=e.results[i][0].transcript;
+    }
+    // Gebruik interim als fallback als Safari niets als 'final' markeert
+    transcript=(fin||inter).trim();box.textContent=transcript||'Luisteren...';
+  };
+  recognition.onerror=e=>{if(e.error==='not-allowed')toast('Microfoon geweigerd');else if(e.error!=='no-speech'&&e.error!=='aborted')toast('Fout: '+e.error);stopRec(false)};
+  recognition.onend=()=>{if(isRec)try{recognition.start()}catch(e){}};
+  try{
+    recognition.start();isRec=true;recStart=Date.now();
+    document.getElementById('mic-btn').classList.add('rec');
+    document.getElementById('rec-status').textContent='Tik nogmaals om te stoppen';
+    updateTimer();recTimer=setInterval(updateTimer,200);
+  }catch(e){toast('Kon opname niet starten: '+e.message)}
+}
+function updateTimer(){const el=Math.floor((Date.now()-recStart)/1000);document.getElementById('rec-timer').textContent=`${Math.floor(el/60)}:${pad(el%60)}`}
+function stopRec(process=true){
+  if(!isRec&&!recognition)return;
+  isRec=false;clearInterval(recTimer);
+  document.getElementById('mic-btn').classList.remove('rec');
+  document.getElementById('rec-status').textContent='';
+  if(recognition){try{recognition.stop()}catch(e){};recognition=null}
+  // Fallback: pak zichtbare tekst uit het transcript-vak als de variabele leeg is
+  const boxText=document.getElementById('transcript-box').textContent;
+  const t=(transcript||'').trim()||(boxText!=='Je transcriptie verschijnt hier...'&&boxText!=='Luisteren...'?boxText.trim():'');
+  if(process&&t)processInput(t);
+  else if(process)toast('Geen spraak gedetecteerd');
+}
+
+// ═══ Process input ═══
+async function processInput(text){
+  document.getElementById('ai-processing').style.display='flex';
+  document.getElementById('parsed-fields').style.display='none';
+  let parsed,source='lokaal';
+  if(settings.apiKey&&settings.apiKey.startsWith('sk-ant-')){
+    try{parsed=await parseWithClaude(text);source='Claude AI'}
+    catch(e){console.warn(e);parsed=parseLocally(text)}
+  }else parsed=parseLocally(text);
+  document.getElementById('ai-processing').style.display='none';
+  document.getElementById('parsed-fields').style.display='block';
+  document.getElementById('f-title').value=parsed.title||text.substring(0,60);
+  document.getElementById('f-date').value=parsed.date||'';
+  document.getElementById('f-time').value=parsed.time||'';
+  document.getElementById('f-loc').value=parsed.location||'';
+  document.getElementById('f-notes').value=parsed.notes||'';
+  document.getElementById('f-recur').value=parsed.recur||'none';
+  document.getElementById('parser-src').textContent=`Verwerkt met ${source}. Pas aan indien nodig.`;
+  document.getElementById('rec-save').disabled=false;
+}
+
+async function parseWithClaude(text){
+  const today=new Date().toLocaleDateString('nl-NL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const sys=`Je bent een assistent die Nederlandse tekst omzet in to-do items. Vandaag is ${today}. Geef ALLEEN geldig JSON terug zonder markdown.\nSchema:{\"title\":\"max 60 tekens\",\"date\":\"YYYY-MM-DD of null\",\"time\":\"HH:MM of null\",\"location\":\"of null\",\"recur\":\"none|daily|weekdays|weekly|biweekly|monthly|yearly\",\"notes\":\"of null\"}\nRegels: vertaal relatieve datums, 's avonds=+12h als <12, locatie alleen als expliciet, recur detecteer herhalingspatronen.`;
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':settings.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:400,system:sys,messages:[{role:'user',content:text}]})});
+  if(!r.ok)throw new Error(await r.text());
+  const d=await r.json();
+  return JSON.parse(d.content[0].text.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''));
+}
+
+function parseLocally(text){
+  const lo=text.toLowerCase();
+  const r={title:text.charAt(0).toUpperCase()+text.slice(1,60),date:null,time:null,location:null,recur:'none',notes:null};
+  if(/elke\s+dag|dagelijks/.test(lo))r.recur='daily';
+  else if(/elke\s+werkdag/.test(lo))r.recur='weekdays';
+  else if(/elke\s+week|wekelijks/.test(lo))r.recur='weekly';
+  else if(/om\s+de\s+(twee|2)\s+we?k/.test(lo))r.recur='biweekly';
+  else if(/elke\s+maand|maandelijks/.test(lo))r.recur='monthly';
+  else if(/elk\s+jaar|jaarlijks/.test(lo))r.recur='yearly';
+  const today=new Date();
+  const dn=['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+  if(/vandaag|vanavond|vanmiddag|vanmorgen/.test(lo)){r.date=todayISO()}
+  else if(/morgen|morgenochtend|morgenavond|morgenmiddag/.test(lo)){const d=new Date();d.setDate(d.getDate()+1);r.date=d2iso(d)}
+  else if(/overmorgen/.test(lo)){const d=new Date();d.setDate(d.getDate()+2);r.date=d2iso(d)}
+  else{
+    for(let i=0;i<7;i++){if(new RegExp('\\b'+dn[i]+'\\b').test(lo)){const d=new Date();let diff=i-d.getDay();if(diff<=0)diff+=7;if(/volgende\s+week/.test(lo))diff+=7;d.setDate(d.getDate()+diff);r.date=d2iso(d);break}}
+    const dm=lo.match(/\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/);
+    if(dm&&!r.date){let y=dm[3]?parseInt(dm[3]):today.getFullYear();if(y<100)y+=2000;const d=new Date(y,parseInt(dm[2])-1,parseInt(dm[1]));if(d<today)d.setFullYear(y+1);r.date=d2iso(d)}
+  }
+  const tm=lo.match(/\b(\d{1,2})[:\.](\d{2})\b/);
+  if(tm){r.time=`${pad(parseInt(tm[1]))}:${tm[2]}`}
+  else{const hm=lo.match(/\b(?:om\s+)?(\d{1,2})\s*uur\b/);
+    if(hm){let h=parseInt(hm[1]);if(/avonds|vanavond/.test(lo)&&h<12)h+=12;if(/middags|vanmiddag/.test(lo)&&h<12)h+=12;r.time=`${pad(h)}:00`}
+    else if(/vanavond/.test(lo))r.time='19:00';else if(/vanmiddag/.test(lo))r.time='14:00';else if(/vanmorgen|vanochtend/.test(lo))r.time='09:00'
+  }
+  const lm=text.match(/\b(?:bij|in|op|naar)\s+([A-Z][a-zA-Z\s]{2,30})/);
+  if(lm)r.location=lm[1].trim().replace(/\s+(om|met|voor|en|de|het|een)$/i,'');
+  const tc=text.replace(/\b(morgen|vandaag|overmorgen|vanavond|vanmiddag|vanmorgen|vanochtend|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag)\b/gi,'').replace(/\bom\s+\d{1,2}([:\.]\d{2})?\s*uur?\b/gi,'').replace(/\b\d{1,2}[:\.]\d{2}\b/g,'').replace(/\b(elke\s+dag|dagelijks|elke\s+werkdag|elke\s+week|wekelijks|om\s+de\s+(twee|2)\s+weken?|elke\s+maand|maandelijks|elk\s+jaar|jaarlijks)\b/gi,'').replace(/\s{2,}/g,' ').trim();
+  if(tc.length>3)r.title=tc.charAt(0).toUpperCase()+tc.slice(1,60);
+  return r;
+}
+
+// ═══ Save ═══
+function saveTask(){
+  const title=document.getElementById('f-title').value.trim();
+  if(!title){toast('Geef de taak een titel');return}
+  const t={id:'todo_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),title,date:document.getElementById('f-date').value||null,time:document.getElementById('f-time').value||null,location:document.getElementById('f-loc').value.trim()||null,notes:document.getElementById('f-notes').value.trim()||null,recur:document.getElementById('f-recur').value||'none',photos:photos.slice(),transcript:transcript||document.getElementById('type-input').value||'',createdAt:Date.now(),done:false};
+  todos.unshift(t);save();render();hideSheet('rec');resetRec();toast('Taak opgeslagen');
+  if(t.date)setTimeout(()=>{if(confirm('Wil je deze taak toevoegen aan je iPhone Agenda?'))exportICS(t)},400);
+}
+function resetRec(){
+  transcript='';photos=[];
+  document.getElementById('transcript-box').textContent='Je transcriptie verschijnt hier...';
+  document.getElementById('transcript-box').classList.add('empty-state');
+  document.getElementById('transcript-box').style.display='none';
+  document.getElementById('type-input').value='';
+  document.getElementById('parsed-fields').style.display='none';
+  document.getElementById('ai-processing').style.display='none';
+  document.getElementById('rec-save').disabled=true;
+  document.getElementById('rec-timer').textContent='0:00';
+  document.getElementById('rec-status').textContent='Tik op de microfoon om te starten';
+  document.getElementById('rec-photos').style.display='none';
+  document.getElementById('rec-photo-grid').innerHTML='';
+  document.getElementById('mic-btn').classList.remove('rec');
+}
+
+// ═══ Photos ═══
+function addPhotos(files){
+  const rem=5-photos.length;if(rem<=0){toast('Maximaal 5 foto\'s');return}
+  Array.from(files).slice(0,rem).forEach(f=>{
+    const rd=new FileReader();
+    rd.onload=e=>resizeImg(e.target.result,1200,.75).then(d=>{photos.push({id:'p_'+Date.now()+Math.random().toString(36).slice(2,5),dataUrl:d});renderPhotos()});
+    rd.readAsDataURL(f);
+  });
+}
+function resizeImg(src,max,q){return new Promise(res=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;if(w>max||h>max){if(w>h){h=h*(max/w);w=max}else{w=w*(max/h);h=max}}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',q))};img.onerror=()=>res(src);img.src=src})}
+function renderPhotos(){
+  const s=document.getElementById('rec-photos'),g=document.getElementById('rec-photo-grid');
+  if(!photos.length){s.style.display='none';return}
+  s.style.display='block';
+  g.innerHTML=photos.map(p=>`<div class="photo-item"><img src="${p.dataUrl}" alt=""><button class="photo-rm" data-id="${p.id}">×</button></div>`).join('');
+  g.querySelectorAll('.photo-rm').forEach(b=>b.addEventListener('click',()=>{photos=photos.filter(p=>p.id!==b.dataset.id);renderPhotos()}));
+}
+
+// ═══ ICS export ═══
+function exportICS(t){
+  if(!t.date){toast('Geen datum ingesteld');return}
+  const s=new Date(`${t.date}T${t.time||'09:00'}`),e=new Date(s.getTime()+(t.time?30:60)*60000);
+  const fmt=d=>d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+  const esc2=s=>(s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+  const rrmap={daily:'FREQ=DAILY',weekdays:'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR',weekly:'FREQ=WEEKLY',biweekly:'FREQ=WEEKLY;INTERVAL=2',monthly:'FREQ=MONTHLY',yearly:'FREQ=YEARLY'};
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Stem Taken//NL','CALSCALE:GREGORIAN','METHOD:PUBLISH','BEGIN:VEVENT',`UID:${t.id}@stemtaken`,`DTSTAMP:${fmt(new Date())}`,`DTSTART:${fmt(s)}`,`DTEND:${fmt(e)}`,`SUMMARY:${esc2(t.title)}`,t.notes?`DESCRIPTION:${esc2(t.notes)}`:'',t.location?`LOCATION:${esc2(t.location)}`:'',t.recur&&t.recur!=='none'?`RRULE:${rrmap[t.recur]}`:'','BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${esc2(t.title)}`,'TRIGGER:-PT15M','END:VALARM','END:VEVENT','END:VCALENDAR'].filter(Boolean).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([lines],{type:'text/calendar;charset=utf-8'}));a.download=`${t.title.replace(/[^a-z0-9]/gi,'_')}.ics`;document.body.appendChild(a);a.click();document.body.removeChild(a);
+  toast('Open het .ics-bestand om toe te voegen aan Agenda');
+}
+
+// ═══ PDF Export ═══
+function openPDFSheet(){
+  updatePDFPreview();showSheet('pdf');
+}
+
+document.querySelectorAll('input[name=pdf-scope]').forEach(r=>r.addEventListener('change',()=>{
+  document.getElementById('pdf-range-row').style.display=r.value==='range'&&r.checked?'flex':'none';
+  if(r.checked)updatePDFPreview();
+}));
+['pdf-show-notes','pdf-show-loc','pdf-show-recur','pdf-show-done','pdf-group-date','pdf-from','pdf-to'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('change',updatePDFPreview);
+});
+
+function getPDFTodos(){
+  const scope=document.querySelector('input[name=pdf-scope]:checked').value;
+  const showDone=document.getElementById('pdf-show-done').checked;
+  let list=todos.filter(t=>showDone?true:!t.done);
+  const now=new Date();now.setHours(0,0,0,0);
+  const te=new Date(now);te.setHours(23,59,59,999);
+  const we=new Date(now);we.setDate(we.getDate()+7);we.setHours(23,59,59,999);
+  if(scope==='today')list=list.filter(t=>t.date&&new Date(t.date+'T12:00')>=now&&new Date(t.date+'T12:00')<=te);
+  else if(scope==='week')list=list.filter(t=>t.date&&new Date(t.date+'T12:00')>=now&&new Date(t.date+'T12:00')<=we);
+  else if(scope==='done')list=todos.filter(t=>t.done);
+  else if(scope==='range'){
+    const from=document.getElementById('pdf-from').value;
+    const to=document.getElementById('pdf-to').value;
+    if(from)list=list.filter(t=>!t.date||t.date>=from);
+    if(to)list=list.filter(t=>!t.date||t.date<=to);
+  }
+  else list=list.filter(t=>!t.done);
+  return list.sort((a,b)=>getTS(a)-getTS(b));
+}
+
+function updatePDFPreview(){
+  const list=getPDFTodos();
+  const el=document.getElementById('pdf-preview');
+  if(!list.length){el.textContent='Geen taken gevonden voor deze selectie.';return}
+  el.textContent=`${list.length} taken worden geëxporteerd. Eerste taak: "${list[0].title}".`;
+}
+
+function generatePDF(){
+  const list=getPDFTodos();
+  if(!list.length){toast('Geen taken om te exporteren');return}
+  const showNotes=document.getElementById('pdf-show-notes').checked;
+  const showLoc=document.getElementById('pdf-show-loc').checked;
+  const showRecur=document.getElementById('pdf-show-recur').checked;
+  const groupDate=document.getElementById('pdf-group-date').checked;
+  const now=new Date().toLocaleDateString('nl-NL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  let html=`<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8"><title>Stem Taken — Export</title><style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;font-size:12pt;color:#000;padding:24mm 20mm;background:#fff}
+    h1{font-size:22pt;font-weight:700;margin-bottom:4pt;letter-spacing:-.3px}
+    .subtitle{font-size:10pt;color:#666;margin-bottom:20pt;border-bottom:1px solid #e0e0e0;padding-bottom:10pt}
+    .group-hdr{font-size:11pt;font-weight:700;color:#007AFF;text-transform:uppercase;letter-spacing:.5px;
+      margin:16pt 0 6pt;padding-bottom:4pt;border-bottom:1.5px solid #007AFF}
+    .task{display:flex;align-items:flex-start;gap:8pt;padding:7pt 0;border-bottom:.5px solid #f0f0f0}
+    .task:last-child{border-bottom:none}
+    .check-box{width:14pt;height:14pt;border-radius:50%;border:1.5px solid #C6C6C8;flex-shrink:0;margin-top:1pt}
+    .check-box.done{background:#007AFF;border-color:#007AFF;display:flex;align-items:center;justify-content:center}
+    .check-box.done::after{content:'✓';color:white;font-size:8pt;font-weight:700}
+    .task-body{flex:1}
+    .task-title{font-size:12pt;font-weight:500}
+    .task-title.done{text-decoration:line-through;color:#999}
+    .task-meta{font-size:9pt;color:#666;margin-top:2pt;display:flex;flex-wrap:wrap;gap:8pt}
+    .task-notes{font-size:9pt;color:#444;margin-top:3pt;font-style:italic;line-height:1.4}
+    .footer{margin-top:20pt;padding-top:8pt;border-top:1px solid #e0e0e0;font-size:9pt;color:#999;text-align:center}
+    @media print{body{padding:15mm 15mm}}
+  </style></head><body>
+  <h1>📋 Stem Taken</h1>
+  <div class="subtitle">Geëxporteerd op ${now} &nbsp;·&nbsp; ${list.length} taken</div>`;
+
+  if(groupDate){
+    const groups={};
+    list.forEach(t=>{
+      const key=t.date||'__nodatum__';
+      if(!groups[key])groups[key]=[];
+      groups[key].push(t);
+    });
+    Object.keys(groups).sort().forEach(key=>{
+      const label=key==='__nodatum__'?'Geen datum':fmtDT(key,null);
+      html+=`<div class="group-hdr">${label}</div>`;
+      groups[key].forEach(t=>{html+=taskHTML(t,showNotes,showLoc,showRecur)});
+    });
+  }else{
+    list.forEach(t=>{html+=taskHTML(t,showNotes,showLoc,showRecur)});
+  }
+
+  html+=`<div class="footer">Stem Taken &nbsp;·&nbsp; Gegenereerd op ${new Date().toLocaleString('nl-NL')}</div></body></html>`;
+
+  const w=window.open('','_blank');
+  if(w){
+    w.document.write(html);
+    w.document.close();
+    setTimeout(()=>w.print(),500);
+  }else{
+    // Fallback: download als HTML
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+    a.download=`stem-taken-export-${todayISO()}.html`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    toast('Bestand gedownload. Open in browser om te printen als PDF.');
+  }
+  hideSheet('pdf');
+}
+
+function taskHTML(t,showNotes,showLoc,showRecur){
+  const meta=[];
+  if(t.date)meta.push(`⏰ ${fmtDT(t.date,t.time)}`);
+  if(showLoc&&t.location)meta.push(`📍 ${t.location}`);
+  if(showRecur&&t.recur&&t.recur!=='none')meta.push(`🔁 ${RLABELS[t.recur]}`);
+  return`<div class="task"><div class="check-box ${t.done?'done':''}"></div><div class="task-body"><div class="task-title ${t.done?'done':''}">${esc(t.title||'(geen titel)')}</div>${meta.length?`<div class="task-meta">${meta.map(esc).join('<span style="color:#ccc"> | </span>')}</div>`:''} ${showNotes&&t.notes?`<div class="task-notes">${esc(t.notes)}</div>`:''}</div></div>`;
+}
+
+// ═══ JSON export/import ═══
+function expJSON(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({todos,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'}));a.download=`stem-taken-${todayISO()}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a)}
+function impJSON(file){const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(Array.isArray(d.todos)){if(confirm(`${d.todos.length} taken importeren?`)){d.todos.forEach(t=>{t.id='todo_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);todos.push(t)});save();render();toast(`${d.todos.length} taken geïmporteerd`)}}else toast('Ongeldig formaat')}catch(e){toast('Kon bestand niet lezen')}};r.readAsText(file)}
+
+// ═══ Onboarding ═══
+let obStep=0;
+function showOB(){
+  obStep=0;updateOB();
+  document.getElementById('ob-url').textContent=window.location.origin+window.location.pathname+'?action=record';
+  document.getElementById('onboarding').style.display='flex';
+}
+function hideOB(){document.getElementById('onboarding').style.display='none';localStorage.setItem(OBK,'1')}
+function updateOB(){
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.toggle('active',parseInt(s.dataset.step)===obStep));
+  document.querySelectorAll('.ob-dots span').forEach((d,i)=>d.classList.toggle('active',i===obStep));
+  document.getElementById('ob-next').textContent=obStep===3?'Aan de slag':'Volgende';
+}
+
+// ═══ Init ═══
+document.addEventListener('DOMContentLoaded',()=>{
+  load();render();
+  if(!localStorage.getItem(OBK))showOB();
+
+  // Onboarding
+  document.getElementById('ob-skip').addEventListener('click',hideOB);
+  document.getElementById('ob-next').addEventListener('click',()=>{obStep<3?obStep++:hideOB();updateOB()});
+  document.getElementById('ob-url').addEventListener('click',async e=>{try{await navigator.clipboard.writeText(e.target.textContent);toast('URL gekopieerd')}catch{}});
+
+  // FABs
+  document.getElementById('record-btn').addEventListener('click',()=>{resetRec();setMode('voice');showSheet('rec');setTimeout(()=>startRec(),300)});
+  document.getElementById('type-btn').addEventListener('click',()=>{resetRec();setMode('type');showSheet('rec')});
+  document.getElementById('photo-fab').addEventListener('click',()=>{resetRec();setMode('voice');showSheet('rec');setTimeout(()=>document.getElementById('photo-input').click(),300)});
+
+  // Mode tabs
+  document.querySelectorAll('.mode-tab').forEach(t=>t.addEventListener('click',()=>{if(isRec)stopRec(false);setMode(t.dataset.mode)}));
+
+  // Mic + type
+  document.getElementById('mic-btn').addEventListener('click',()=>isRec?stopRec(true):startRec());
+  document.getElementById('type-process').addEventListener('click',()=>{const t=document.getElementById('type-input').value.trim();if(!t){toast('Typ eerst je taak');return}processInput(t)});
+
+  // Recorder sheet
+  document.getElementById('rec-cancel').addEventListener('click',()=>{if(isRec)stopRec(false);hideSheet('rec');resetRec()});
+  document.getElementById('rec-bd').addEventListener('click',()=>{if(isRec)stopRec(false);hideSheet('rec');resetRec()});
+  document.getElementById('rec-save').addEventListener('click',saveTask);
+
+  // Detail sheet
+  document.getElementById('det-cancel').addEventListener('click',()=>hideSheet('det'));
+  document.getElementById('det-bd').addEventListener('click',()=>hideSheet('det'));
+  document.getElementById('det-save').addEventListener('click',()=>{
+    const t=todos.find(x=>x.id===currentEdit);if(!t)return;
+    t.title=document.getElementById('d-title').value.trim();
+    t.date=document.getElementById('d-date').value||null;
+    t.time=document.getElementById('d-time').value||null;
+    t.location=document.getElementById('d-loc').value.trim()||null;
+    t.notes=document.getElementById('d-notes').value.trim()||null;
+    t.recur=document.getElementById('d-recur').value||'none';
+    save();render();hideSheet('det');toast('Opgeslagen');
+  });
+  document.getElementById('det-delete').addEventListener('click',()=>{if(!confirm('Taak verwijderen?'))return;todos=todos.filter(x=>x.id!==currentEdit);save();render();hideSheet('det');toast('Verwijderd')});
+  document.getElementById('det-ics').addEventListener('click',()=>{const t=todos.find(x=>x.id===currentEdit);if(t)exportICS(t)});
+
+  // PDF
+  document.getElementById('pdf-btn').addEventListener('click',openPDFSheet);
+  document.getElementById('pdf-cancel').addEventListener('click',()=>hideSheet('pdf'));
+  document.getElementById('pdf-bd').addEventListener('click',()=>hideSheet('pdf'));
+  document.getElementById('pdf-go').addEventListener('click',generatePDF);
+
+  // Settings
+  document.getElementById('settings-btn').addEventListener('click',()=>{document.getElementById('set-key').value=settings.apiKey||'';showSheet('set')});
+  document.getElementById('set-cancel').addEventListener('click',()=>hideSheet('set'));
+  document.getElementById('set-bd').addEventListener('click',()=>hideSheet('set'));
+  document.getElementById('set-save').addEventListener('click',()=>{settings.apiKey=document.getElementById('set-key').value.trim();saveSet();hideSheet('set');toast(settings.apiKey?'API-key opgeslagen':'Lokale parser actief')});
+  document.getElementById('show-ob').addEventListener('click',()=>{hideSheet('set');setTimeout(showOB,300)});
+  document.getElementById('exp-json').addEventListener('click',expJSON);
+  document.getElementById('imp-json').addEventListener('click',()=>document.getElementById('imp-file').click());
+  document.getElementById('imp-file').addEventListener('change',e=>{if(e.target.files[0])impJSON(e.target.files[0]);e.target.value=''});
+  document.getElementById('clear-all').addEventListener('click',()=>{if(confirm('Alle taken wissen?')){todos=[];save();render();hideSheet('set');toast('Alles gewist')}});
+
+  // Photo input
+  document.getElementById('photo-input').addEventListener('change',e=>{if(e.target.files.length)addPhotos(e.target.files);e.target.value=''});
+
+  // Action Button
+  const p=new URLSearchParams(window.location.search);
+  if(p.get('action')==='record'&&localStorage.getItem(OBK)){
+    setTimeout(()=>{resetRec();setMode('voice');showSheet('rec');setTimeout(()=>startRec(),400)},300);
+    history.replaceState({},'',window.location.pathname);
+  }
+});
+
+document.addEventListener('gesturestart',e=>e.preventDefault());
+let lte=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lte<=300)e.preventDefault();lte=n},{passive:false});
+</script>
+</body>
+</html>
